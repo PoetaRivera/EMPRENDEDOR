@@ -1,0 +1,17 @@
+{
+  "name": "inventario-saas-modular",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Base architecture for a modular multi-tenant SaaS with Node, Express and Firestore.",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "^7.11.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.1.1"
+  }
+}
