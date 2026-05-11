@@ -6,8 +6,11 @@ class ClientsRepository {
     this.db = getFirestore();
   }
 
-  async listBuyers(clienteId) {
-    const snapshot = await tenantItemsCollection(this.db, "clients", clienteId).get();
+  async listBuyers(clienteId, { limit, offset } = {}) {
+    let query = tenantItemsCollection(this.db, "clients", clienteId);
+    if (offset) query = query.offset(offset);
+    if (limit) query = query.limit(limit);
+    const snapshot = await query.get();
     return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   }
 

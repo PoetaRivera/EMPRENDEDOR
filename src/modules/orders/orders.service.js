@@ -1,47 +1,50 @@
 const { BadRequestError } = require("../../shared/http/errors");
-const { InventoryService } = require("../inventory/inventory.service");
+const { getFirestore } = require("../../config/firebase");
+const { InventoryRepository } = require("../inventory/inventory.repository");
 const { PaymentsService } = require("../payments/payments.service");
 const { OrdersRepository } = require("./orders.repository");
 
 class OrdersService {
   constructor({
     ordersRepository = new OrdersRepository(),
-    inventoryService = new InventoryService(),
+    inventoryRepository = new InventoryRepository(),
     paymentsService = new PaymentsService()
   } = {}) {
     this.ordersRepository = ordersRepository;
-    this.inventoryService = inventoryService;
+    this.inventoryRepository = inventoryRepository;
     this.paymentsService = paymentsService;
+    this.db = getFirestore();
   }
 
   async createOrder({ clienteId, items, cliente, metodoPago }) {
-    for (const item of items) {
-      const available = await this.inventoryService.checkDisponibilidad({
-        clienteId,
-        productoId: item.productoId,
-        cantidad: item.cantidad
-      });
+    const order = await this.db.runTransaction(async (t) => {
+      for (const item of items) {
+        const inv = await this.inventoryRepository.getItemInTransaction(t, clienteId, item.productoId);
 
-      if (!available) {
-        throw new BadRequestError(`Product ${item.productoId} is not available`);
+        if (!inv) {
+          throw new BadRequestError(`Product ${item.productoId} not found in inventory`);
+        }
+
+        const stock = Number(inv.stock || 0);
+        if (stock < item.cantidad) {
+          throw new BadRequestError(`Product ${item.productoId} has insufficient stock`);
+        }
+
+        this.inventoryRepository.setItemInTransaction(t, clienteId, {
+          productoId: item.productoId,
+          stock: stock - item.cantidad,
+          updatedAt: new Date().toISOString()
+        });
       }
-    }
 
-    const order = await this.ordersRepository.createOrder(clienteId, {
-      cliente,
-      items,
-      metodoPago,
-      status: "created",
-      createdAt: new Date().toISOString()
-    });
-
-    for (const item of items) {
-      await this.inventoryService.descontarStock({
-        clienteId,
-        productoId: item.productoId,
-        cantidad: item.cantidad
+      return this.ordersRepository.createOrderInTransaction(t, clienteId, {
+        cliente,
+        items,
+        metodoPago,
+        status: "created",
+        createdAt: new Date().toISOString()
       });
-    }
+    });
 
     const payment = await this.paymentsService.registerStatus({
       clienteId,
@@ -53,8 +56,8 @@ class OrdersService {
     return { ...order, payment };
   }
 
-  listOrders({ clienteId }) {
-    return this.ordersRepository.listOrders(clienteId);
+  listOrders({ clienteId, pagination }) {
+    return this.ordersRepository.listOrders(clienteId, pagination);
   }
 }
 

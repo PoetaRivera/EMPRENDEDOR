@@ -5,8 +5,8 @@ class CatalogService {
     this.catalogRepository = catalogRepository;
   }
 
-  listProducts({ clienteId }) {
-    return this.catalogRepository.listProducts(clienteId);
+  listProducts({ clienteId, pagination }) {
+    return this.catalogRepository.listProducts(clienteId, pagination);
   }
 
   createProduct({ clienteId, product }) {

@@ -6,13 +6,17 @@ class OrdersRepository {
     this.db = getFirestore();
   }
 
-  async createOrder(clienteId, order) {
-    const ref = await tenantItemsCollection(this.db, "orders", clienteId).add(order);
+  createOrderInTransaction(t, clienteId, order) {
+    const ref = tenantItemsCollection(this.db, "orders", clienteId).doc();
+    t.set(ref, order);
     return { id: ref.id, ...order };
   }
 
-  async listOrders(clienteId) {
-    const snapshot = await tenantItemsCollection(this.db, "orders", clienteId).get();
+  async listOrders(clienteId, { limit, offset } = {}) {
+    let query = tenantItemsCollection(this.db, "orders", clienteId);
+    if (offset) query = query.offset(offset);
+    if (limit) query = query.limit(limit);
+    const snapshot = await query.get();
     return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
   }
 }

@@ -1,4 +1,5 @@
 const { OrdersService } = require("./orders.service");
+const { getPagination } = require("../../shared/http/pagination");
 
 const ordersService = new OrdersService();
 
@@ -6,7 +7,7 @@ async function createOrder(req, res, next) {
   try {
     const order = await ordersService.createOrder({
       clienteId: req.tenant.clienteId,
-      items: req.body.items || [],
+      items: req.body.items,
       cliente: req.body.cliente,
       metodoPago: req.body.metodoPago
     });
@@ -19,7 +20,8 @@ async function createOrder(req, res, next) {
 async function listOrders(req, res, next) {
   try {
     const orders = await ordersService.listOrders({
-      clienteId: req.tenant.clienteId
+      clienteId: req.tenant.clienteId,
+      pagination: getPagination(req.query)
     });
     res.json(orders);
   } catch (error) {

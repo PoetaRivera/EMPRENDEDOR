@@ -12,12 +12,25 @@ class InventoryRepository {
       .limit(1)
       .get();
 
-    if (snapshot.empty) {
-      return null;
-    }
-
+    if (snapshot.empty) return null;
     const doc = snapshot.docs[0];
     return { id: doc.id, ...doc.data() };
+  }
+
+  getItemRef(clienteId, productoId) {
+    return tenantItemsCollection(this.db, "inventory", clienteId).doc(productoId);
+  }
+
+  async getItemInTransaction(t, clienteId, productoId) {
+    const ref = this.getItemRef(clienteId, productoId);
+    const doc = await t.get(ref);
+    if (!doc.exists) return null;
+    return { id: doc.id, ...doc.data() };
+  }
+
+  setItemInTransaction(t, clienteId, payload) {
+    const ref = this.getItemRef(clienteId, payload.productoId);
+    t.set(ref, payload, { merge: true });
   }
 
   async upsertMovement(clienteId, payload) {

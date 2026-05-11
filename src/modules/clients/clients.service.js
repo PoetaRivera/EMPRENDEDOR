@@ -5,8 +5,8 @@ class ClientsService {
     this.clientsRepository = clientsRepository;
   }
 
-  listBuyers({ clienteId }) {
-    return this.clientsRepository.listBuyers(clienteId);
+  listBuyers({ clienteId, pagination }) {
+    return this.clientsRepository.listBuyers(clienteId, pagination);
   }
 
   createBuyer({ clienteId, buyer }) {

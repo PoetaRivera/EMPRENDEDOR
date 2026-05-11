@@ -1,6 +1,8 @@
 const { BadRequestError } = require("../shared/http/errors");
 
 function resolveClienteId(req) {
+  if (req.user?.clienteId) return req.user.clienteId;
+
   const fromHeader = req.header("x-cliente-id");
   const fromQuery = req.query.clienteId;
   const host = req.hostname || "";

@@ -1,12 +1,15 @@
+const jwt = require("jsonwebtoken");
+const { env } = require("../../config/env");
+
 class AuthService {
-  async login({ clienteId, email }) {
-    return {
-      accessToken: `demo-token-for-${clienteId}-${email}`,
-      user: {
-        email,
-        role: "admin"
-      }
-    };
+  login({ clienteId, email }) {
+    const payload = { clienteId, email, role: "admin" };
+    const accessToken = jwt.sign(payload, env.jwtSecret, { expiresIn: "8h" });
+    return { accessToken, user: { email, role: "admin", clienteId } };
+  }
+
+  verifyToken(token) {
+    return jwt.verify(token, env.jwtSecret);
   }
 }
 
