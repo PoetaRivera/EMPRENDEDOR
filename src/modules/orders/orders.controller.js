@@ -9,7 +9,8 @@ async function createOrder(req, res, next) {
       clienteId: req.tenant.clienteId,
       items: req.body.items,
       cliente: req.body.cliente,
-      metodoPago: req.body.metodoPago
+      metodoPago: req.body.metodoPago,
+      factura: req.body.factura
     });
     res.status(201).json(order);
   } catch (error) {

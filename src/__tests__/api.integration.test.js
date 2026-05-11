@@ -127,5 +127,22 @@ describe("API integration", () => {
 
       expect(res.status).toBe(400);
     });
+
+    it("rechaza orden con factura CCF sin NIT del receptor", async () => {
+      const res = await request(app)
+        .post("/api/orders")
+        .set("authorization", `Bearer ${token}`)
+        .send({
+          items: [{ productoId: "p1", cantidad: 1 }],
+          metodoPago: "tarjeta",
+          factura: {
+            tipo: "CCF",
+            emisor: { nit: "0614-111111-111-1", nrc: "11111-1", razonSocial: "Mi Empresa", direccion: "SS", giro: "Comercio" },
+            receptor: { razonSocial: "Falta NIT y NRC" }
+          }
+        });
+
+      expect(res.status).toBe(400);
+    });
   });
 });

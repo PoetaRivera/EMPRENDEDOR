@@ -16,7 +16,7 @@ class OrdersService {
     this.db = getFirestore();
   }
 
-  async createOrder({ clienteId, items, cliente, metodoPago }) {
+  async createOrder({ clienteId, items, cliente, metodoPago, factura }) {
     const order = await this.db.runTransaction(async (t) => {
       for (const item of items) {
         const inv = await this.inventoryRepository.getItemInTransaction(t, clienteId, item.productoId);
@@ -37,13 +37,18 @@ class OrdersService {
         });
       }
 
-      return this.ordersRepository.createOrderInTransaction(t, clienteId, {
+      const orderData = {
         cliente,
         items,
         metodoPago,
         status: "created",
         createdAt: new Date().toISOString()
-      });
+      };
+      if (factura) {
+        orderData.factura = factura;
+      }
+
+      return this.ordersRepository.createOrderInTransaction(t, clienteId, orderData);
     });
 
     const payment = await this.paymentsService.registerStatus({

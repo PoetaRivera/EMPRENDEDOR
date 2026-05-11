@@ -62,6 +62,45 @@ describe("OrdersService", () => {
     expect(result.payment.status).toBe("pending");
   });
 
+  it("incluye factura en la orden cuando se proporciona", async () => {
+    mockInventoryRepo.getItemInTransaction.mockResolvedValue({ id: "inv1", productoId: "p1", stock: 10 });
+    mockOrdersRepo.createOrderInTransaction.mockReturnValue({ id: "order2", cliente: "Juan", items: [], status: "created" });
+    mockPaymentsService.registerStatus.mockResolvedValue({ id: "pay2", status: "pending" });
+    mockDb.runTransaction.mockImplementation(async (fn) => fn({}));
+
+    const factura = {
+      tipo: "CCF",
+      emisor: { nit: "0614-111111-111-1", nrc: "11111-1", razonSocial: "Mi Empresa", direccion: "SS", giro: "Comercio" },
+      receptor: { nit: "0614-999999-999-9", nrc: "99999-9", razonSocial: "Cliente SA", direccion: "Santa Ana" }
+    };
+
+    await ordersService.createOrder({
+      clienteId: "c1",
+      items: [{ productoId: "p1", cantidad: 1 }],
+      metodoPago: "transferencia",
+      factura
+    });
+
+    const callArgs = mockOrdersRepo.createOrderInTransaction.mock.calls[0];
+    expect(callArgs[2].factura).toEqual(factura);
+  });
+
+  it("no incluye factura si no se proporciona", async () => {
+    mockInventoryRepo.getItemInTransaction.mockResolvedValue({ id: "inv1", productoId: "p1", stock: 10 });
+    mockOrdersRepo.createOrderInTransaction.mockReturnValue({ id: "order3", cliente: "Juan", items: [], status: "created" });
+    mockPaymentsService.registerStatus.mockResolvedValue({ id: "pay3", status: "pending" });
+    mockDb.runTransaction.mockImplementation(async (fn) => fn({}));
+
+    await ordersService.createOrder({
+      clienteId: "c1",
+      items: [{ productoId: "p1", cantidad: 1 }],
+      metodoPago: "transferencia"
+    });
+
+    const callArgs = mockOrdersRepo.createOrderInTransaction.mock.calls[0];
+    expect(callArgs[2].factura).toBeUndefined();
+  });
+
   it("lanza error si el producto no existe en inventario", async () => {
     mockInventoryRepo.getItemInTransaction.mockResolvedValue(null);
 
